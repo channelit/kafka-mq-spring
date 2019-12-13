@@ -1,0 +1,264 @@
+version: '3.7'
+services:
+
+  kafka1:
+    image: cithub/kafka
+    hostname: kafka1
+    container_name: kafka1
+    depends_on:
+      - zoo1
+      - zoo2
+      - zoo3
+    ports:
+      - "8091:8091"
+      - "7091:7091"
+    volumes:
+      - ./data/kafka1/data:/kafka_data
+      - ./kafka/conf/server1.properties:/conf/server.properties
+      - ./data/kafka1/logs:/kafka_logs
+    command: ["./opt/kafka/bin/kafka-server-start.sh", "/conf/server.properties"]
+    networks:
+      - kafka
+
+  kafka2:
+    image: cithub/kafka
+    hostname: kafka2
+    container_name: kafka2
+    depends_on:
+      - zoo1
+      - zoo2
+      - zoo3
+    ports:
+      - "8092:8092"
+      - "7092:7092"
+    volumes:
+      - ./data/kafka2/data:/kafka_data
+      - ./kafka/conf/server2.properties:/conf/server.properties
+      - ./data/kafka2/logs:/kafka_logs
+    command: ["./opt/kafka/bin/kafka-server-start.sh", "/conf/server.properties"]
+    networks:
+      - kafka
+
+  kafka3:
+    image: cithub/kafka
+    hostname: kafka3
+    container_name: kafka3
+    depends_on:
+      - zoo1
+      - zoo2
+      - zoo3
+    volumes:
+      - ./data/kafka3/data:/kafka_data
+      - ./kafka/conf/server3.properties:/conf/server.properties
+      - ./data/kafka3/logs:/kafka_logs
+    ports:
+      - "8093:8093"
+      - "7093:7093"
+    command: ["./opt/kafka/bin/kafka-server-start.sh", "/conf/server.properties"]
+    networks:
+      - kafka
+
+  zoo1:
+    image: cithub/zookeeper
+    hostname: zoo1
+    container_name: zoo1
+    restart: always
+    ports:
+      - 2181:2181
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: server.1=0.0.0.0:2888:3888 server.2=zoo2:2888:3888 server.3=zoo3:2888:3888
+    volumes:
+      - ./data/zoo1/datalog:/datalog
+      - ./data/zoo1/data:/data
+      - ./data/zoo1/logs:/logs
+    networks:
+      - kafka
+
+  zoo2:
+    image: cithub/zookeeper
+    hostname: zoo2
+    container_name: zoo2
+    restart: always
+    ports:
+      - 2182:2181
+    environment:
+      ZOO_MY_ID: 2
+      ZOO_SERVERS: server.1=zoo1:2888:3888 server.2=0.0.0.0:2888:3888 server.3=zoo3:2888:3888
+    volumes:
+      - ./data/zoo2/datalog:/datalog
+      - ./data/zoo2/data:/data
+      - ./data/zoo2/logs:/logs
+    networks:
+      - kafka
+
+  zoo3:
+    image: cithub/zookeeper
+    hostname: zoo3
+    container_name: zoo3
+    restart: always
+    ports:
+      - 2183:2181
+    environment:
+      ZOO_MY_ID: 3
+      ZOO_SERVERS: server.1=zoo1:2888:3888 server.2=zoo2:2888:3888 server.3=0.0.0.0:2888:3888
+    volumes:
+      - ./data/zoo3/datalog:/datalog
+      - ./data/zoo3/data:/data
+      - ./data/zoo3/logs:/logs
+    networks:
+      - kafka
+
+  manager:
+    image: cithub/kafka-manager
+    hostname: manager
+    container_name: manager
+    depends_on:
+      - kafka1
+      - kafka2
+      - kafka3
+    environment:
+      ZK_HOSTS: "zoo1:2181,zoo2:2181,zoo3:2181"
+    ports:
+      - 9000:9000
+    networks:
+      - kafka
+
+  ibmmq:
+    image: ibmcom/mq
+    hostname: mq
+    container_name: mq
+    restart: always
+    ports:
+      - "3302:22"
+      - "1414:1414"
+      - "9443:9443"
+    environment:
+      LICENSE: accept
+      MQ_QMGR_NAME: QM
+    networks:
+      - kafka
+
+  mongo:
+    image: mongo
+    restart: always
+    container_name: mongo
+    command: --serviceExecutor adaptive
+    ports:
+      - 27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: password
+    networks:
+      - kafka
+
+  mongo-express:
+    image: mongo-express
+    restart: always
+    container_name: mongo-express
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: password
+    networks:
+      - kafka
+
+  remote1:
+    image: kafka-mq:v1
+    restart: always
+    container_name: remote1
+    ports:
+      - 6081:8080
+    environment:
+      MY_ID: in-1
+      KAFKA_SERVER_URL: kafka1:7091,kafka2:7092,kafka3:7093
+      MQ_HOST: ibmmq
+    networks:
+      - kafka
+
+  remote2:
+    image: kafka-mq:v1
+    restart: always
+    container_name: remote2
+    ports:
+      - 6082:8080
+    environment:
+      MY_ID: in-2
+      KAFKA_SERVER_URL: kafka1:7091,kafka2:7092,kafka3:7093
+      MQ_HOST: ibmmq
+    networks:
+      - kafka
+
+  service1:
+    image: kafka-mq:v1
+    restart: always
+    container_name: service1
+    ports:
+      - 7081:8080
+    environment:
+      MY_ID: out-1
+      KAFKA_SERVER_URL: kafka1:7091,kafka2:7092,kafka3:7093
+      MQ_HOST: ibmmq
+      DB_MONGO_HOST: mongo
+      KAFKA_CONSUMER_START: "false"
+      KAFKA_STREAM_START: "true"
+      KAFKA_CLIENT_ID: service
+    networks:
+      - kafka
+
+  service2:
+    image: kafka-mq:v1
+    restart: always
+    container_name: service2
+    ports:
+      - 7082:8080
+    environment:
+      MY_ID: out-2
+      KAFKA_SERVER_URL: kafka1:7091,kafka2:7092,kafka3:7093
+      MQ_HOST: ibmmq
+      DB_MONGO_HOST: mongo
+      KAFKA_CONSUMER_START: "false"
+      KAFKA_STREAM_START: "true"
+      KAFKA_CLIENT_ID: service
+    networks:
+      - kafka
+
+  service3:
+    image: kafka-mq:v1
+    restart: always
+    container_name: service3
+    ports:
+      - 7083:8080
+    environment:
+      MY_ID: out-3
+      KAFKA_SERVER_URL: kafka1:7091,kafka2:7092,kafka3:7093
+      MQ_HOST: ibmmq
+      DB_MONGO_HOST: mongo
+      KAFKA_CONSUMER_START: "false"
+      KAFKA_STREAM_START: "true"
+      KAFKA_CLIENT_ID: service
+    networks:
+      - kafka
+
+#  service4:
+#    image: kafka-mq:v1
+#    restart: always
+#    container_name: service4
+#    ports:
+#      - 7084:8080
+#    environment:
+#      MY_ID: fanout
+#      KAFKA_SERVER_URL: kafka1:7091,kafka2:7092,kafka3:7093
+#      MQ_HOST: ibmmq
+#      DB_MONGO_HOST: mongo
+#      KAFKA_CONSUMER_START: "false"
+#      KAFKA_STREAM_START: "true"
+#      KAFKA_CLIENT_ID: service
+#      KAFKA_CONSUMER_GROUP: FANOUT-QA
+#      DB_MONGO_NAME:FIFO: FANOUT-QA
+#    networks:
+#      - kafka
+
+networks:
+  kafka:
