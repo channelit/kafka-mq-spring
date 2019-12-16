@@ -14,6 +14,7 @@ import org.springframework.integration.channel.QueueChannel;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
 import org.springframework.integration.dsl.MessageChannels;
+import org.springframework.integration.handler.LoggingHandler;
 import org.springframework.integration.jms.dsl.Jms;
 import org.springframework.integration.kafka.outbound.KafkaProducerMessageHandler;
 import org.springframework.jms.listener.DefaultMessageListenerContainer;
@@ -32,7 +33,11 @@ public class IntegrationConfiguration {
         return IntegrationFlows.from(Jms.messageDrivenChannelAdapter(externalSourceMqListenerContainer)
                 .autoStartup(true)
                 .extractPayload(true))
+                .handle("msgConsumer", "consumeMessage")
                 .channel("externalSourceMqChannel")
+                .log(
+                        LoggingHandler.Level.INFO, "External Source MQ", m -> m.getHeaders().getId() + ": " + m.getPayload()
+                )
                 .enrichHeaders(eh -> eh.header("MessageType", "demo", true))
                 .channel("toMongoChannel")
                 .get();
@@ -44,7 +49,7 @@ public class IntegrationConfiguration {
 
     @ServiceActivator(inputChannel = "toKafkaChannel")
     @Bean
-    public MessageHandler serviceActivator(@Qualifier("kafkaTemplate") KafkaTemplate<String, String> kafkaTemplate) {
+    public MessageHandler toKafkaChannelHandler(@Qualifier("kafkaTemplate") KafkaTemplate<String, String> kafkaTemplate) {
         KafkaProducerMessageHandler<String, String> handler =
                 new KafkaProducerMessageHandler<>(kafkaTemplate);
         handler.setMessageKeyExpression(new LiteralExpression("this.properties.getMessageKey()"));
@@ -55,5 +60,15 @@ public class IntegrationConfiguration {
     public PollableChannel toMongoChannel() {
         return new QueueChannel();
     }
+
+    @Bean
+    @ServiceActivator(inputChannel = "logChannel")
+    public LoggingHandler logging() {
+        LoggingHandler adapter = new LoggingHandler(LoggingHandler.Level.DEBUG);
+        adapter.setLoggerName("TEST_LOGGER");
+        adapter.setLogExpressionString("headers.id + ': ' + payload");
+        return adapter;
+    }
+
 
 }
