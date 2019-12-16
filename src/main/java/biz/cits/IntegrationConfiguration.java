@@ -1,53 +1,48 @@
 package biz.cits;
 
+import org.aspectj.bridge.IMessageHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.expression.common.LiteralExpression;
 import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.integration.annotation.Transformer;
 import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.channel.QueueChannel;
-import org.springframework.integration.kafka.outbound.KafkaProducerMessageHandler;
-import org.springframework.integration.dsl.DirectChannelSpec;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
 import org.springframework.integration.dsl.MessageChannels;
-import org.springframework.integration.transformer.MessageTransformingHandler;
-import org.springframework.integration.transformer.MethodInvokingTransformer;
+import org.springframework.integration.jms.dsl.Jms;
+import org.springframework.integration.kafka.outbound.KafkaProducerMessageHandler;
+import org.springframework.jms.listener.DefaultMessageListenerContainer;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.MessageHandler;
-import org.springframework.messaging.PollableChannel;
+import org.springframework.messaging.*;
 
 @Configuration
+@Order(1)
 public class IntegrationConfiguration {
+
+    @Autowired
+    DefaultMessageListenerContainer externalSourceMqListenerContainer;
 
     @Bean
     public IntegrationFlow received() {
-        return IntegrationFlows.from(externalSourceMqChannel())
-                .handle(fromKafka())
+        return IntegrationFlows.from(Jms.messageDrivenChannelAdapter(externalSourceMqListenerContainer)
+                .autoStartup(true)
+                .extractPayload(true))
+                .channel("externalSourceMqChannel")
+                .enrichHeaders(eh -> eh.header("MessageType", "demo", true))
+                .channel("toMongoChannel")
                 .get();
-
     }
 
     private MessageChannel externalSourceMqChannel() {
         return MessageChannels.queue(1).get();
     }
 
-    @Bean
-    public MessageChannel receivedInAdapter() {
-        return new DirectChannel();
-    }
-
-    @Transformer(inputChannel = "receivedInAdapter")
-    @Bean
-    public MessageHandler transformer() {
-        return null;
-    }
-
-    @ServiceActivator(inputChannel = "inputToKafka")
+    @ServiceActivator(inputChannel = "toKafkaChannel")
     @Bean
     public MessageHandler serviceActivator(@Qualifier("kafkaTemplate") KafkaTemplate<String, String> kafkaTemplate) {
         KafkaProducerMessageHandler<String, String> handler =
@@ -56,8 +51,8 @@ public class IntegrationConfiguration {
         return handler;
     }
 
-    @Bean
-    public PollableChannel fromKafka() {
+    @Bean("toMongoChannel")
+    public PollableChannel toMongoChannel() {
         return new QueueChannel();
     }
 

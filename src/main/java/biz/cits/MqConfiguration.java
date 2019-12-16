@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.jms.connection.CachingConnectionFactory;
 import org.springframework.jms.listener.DefaultMessageListenerContainer;
 
@@ -16,6 +17,7 @@ import javax.jms.ExceptionListener;
 import javax.jms.JMSException;
 
 @Configuration
+@Order(2)
 public class MqConfiguration implements ExceptionListener {
 
     @Value("${mq.host}")
@@ -73,6 +75,7 @@ public class MqConfiguration implements ExceptionListener {
         DefaultMessageListenerContainer container = new DefaultMessageListenerContainer();
         container.setExceptionListener(this);
         container.setConnectionFactory(externalSourceMqFactory);
+        container.setDestination(externalSourceMqQueue);
         container.setSessionTransacted(true);
         container.setAutoStartup(true);
         container.setConcurrentConsumers(1);
