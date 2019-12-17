@@ -14,6 +14,7 @@ import org.springframework.data.mongodb.MongoDbFactory;
 import org.springframework.data.mongodb.core.SimpleMongoClientDbFactory;
 
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 @Configuration
 public class MongoConfiguration {
@@ -41,6 +42,9 @@ public class MongoConfiguration {
                         .applyToClusterSettings(builder ->
                                 builder.hosts(Arrays.asList(new ServerAddress(DB_MONGO_HOST, DB_MONGO_PORT))))
                         .credential(mongoCredential)
+                        .applyToConnectionPoolSettings(b -> b
+                                .maxConnectionIdleTime(5, TimeUnit.SECONDS)
+                                .maxSize(100))
                         .build());
         return mongoClient;
     }

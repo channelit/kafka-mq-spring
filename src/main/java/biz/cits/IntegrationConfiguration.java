@@ -100,13 +100,13 @@ public class IntegrationConfiguration {
         return handler;
     }
 
-    @Bean
-    public KafkaMessageDrivenChannelAdapter<String, String> adapter(KafkaMessageListenerContainer kafkaListenerContainer) {
-        KafkaMessageDrivenChannelAdapter<String, String> kafkaMessageDrivenChannelAdapter =
-                new KafkaMessageDrivenChannelAdapter(kafkaListenerContainer, KafkaMessageDrivenChannelAdapter.ListenerMode.record);
-        kafkaMessageDrivenChannelAdapter.setOutputChannel(toMongo());
-        return kafkaMessageDrivenChannelAdapter;
-    }
+//    @Bean
+//    public KafkaMessageDrivenChannelAdapter<String, String> adapter(KafkaMessageListenerContainer kafkaListenerContainer) {
+//        KafkaMessageDrivenChannelAdapter<String, String> kafkaMessageDrivenChannelAdapter =
+//                new KafkaMessageDrivenChannelAdapter(kafkaListenerContainer, KafkaMessageDrivenChannelAdapter.ListenerMode.record);
+//        kafkaMessageDrivenChannelAdapter.setOutputChannelName("toMongo");
+//        return kafkaMessageDrivenChannelAdapter;
+//    }
 
     @Bean
     public DefaultKafkaHeaderMapper mapper() {
@@ -118,12 +118,12 @@ public class IntegrationConfiguration {
         return new QueueChannel();
     }
 
-    @Bean
-    @ServiceActivator(inputChannel = "toMongo")
-    public PollableChannel toMongo() {
-        QueueChannel queueChannel = new QueueChannel();
-        return queueChannel;
-    }
+//    @Bean
+//    @ServiceActivator(inputChannel = "toMongo")
+//    public PollableChannel toMongo() {
+//        QueueChannel queueChannel = new QueueChannel();
+//        return queueChannel;
+//    }
 
     @Bean
     @ServiceActivator(inputChannel = "logChannel")
@@ -143,12 +143,11 @@ public class IntegrationConfiguration {
     @Bean
     @ServiceActivator(inputChannel = "toMongo")
     @Autowired
-    public MongoDbOutboundGateway mongoDbOutboundGateway(MongoDbFactory mongoDbFactory) {
+    public MessageHandler mongoDbOutboundGateway(MongoDbFactory mongoDbFactory) {
         MongoDbOutboundGateway gateway = new MongoDbOutboundGateway(mongoDbFactory);
-        gateway.setCollectionNameExpressionString("FIFO");
+        gateway.setCollectionNameExpressionString("'FIFO'");
         gateway.setQueryExpressionString("'{''name'':''Bob''}'");
         gateway.setEntityClass(String.class);
-        gateway.setExpectSingleResult(true);
         gateway.setOutputChannelName("replyChannel");
         return gateway;
     }
