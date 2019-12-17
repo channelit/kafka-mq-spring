@@ -6,6 +6,7 @@ import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.connection.ClusterType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -36,12 +37,15 @@ public class MongoConfiguration {
 
     @Bean
     public MongoClient mongoClient() {
-        MongoCredential mongoCredential = MongoCredential.createCredential(DB_MONGO_USER, "admin", DB_MONGO_PSWD.toCharArray());
+//        MongoCredential mongoCredential = MongoCredential.createCredential(DB_MONGO_USER, "admin", DB_MONGO_PSWD.toCharArray());
         MongoClient mongoClient = MongoClients.create(
                 MongoClientSettings.builder()
                         .applyToClusterSettings(builder ->
-                                builder.hosts(Arrays.asList(new ServerAddress(DB_MONGO_HOST, DB_MONGO_PORT))))
-                        .credential(mongoCredential)
+                                builder
+                                        .requiredClusterType(ClusterType.REPLICA_SET)
+                                        .requiredReplicaSetName("fifo")
+                                        .hosts(Arrays.asList(new ServerAddress(DB_MONGO_HOST, DB_MONGO_PORT))))
+//                        .credential(mongoCredential)
                         .applyToConnectionPoolSettings(b -> b
                                 .maxConnectionIdleTime(5, TimeUnit.SECONDS)
                                 .maxSize(100))

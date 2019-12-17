@@ -139,16 +139,43 @@ services:
     networks:
       - kafka
 
-  mongo:
+  mongo1:
     image: mongo
     restart: always
-    container_name: mongo
-    command: --serviceExecutor adaptive
+    hostname: mongo1
+    container_name: mongo1
+    command: --serviceExecutor adaptive --replSet 'fifo' --bind_ip localhost,mongo1
     ports:
       - 27017:27017
+    volumes:
+      - ./data/mongo1:/data/mongo
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: password
+#      MONGO_INITDB_ROOT_USERNAME: root
+#      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGODB_ADVERTISED_HOSTNAME: mongo1
+      MONGODB_REPLICA_SET_MODE: primary
+      MONGODB_REPLICA_SET_KEY: fifo
+    networks:
+      - kafka
+
+  mongo2:
+    image: mongo
+    restart: always
+    hostname: mongo2
+    container_name: mongo2
+    command: --serviceExecutor adaptive --port 27019 --replSet 'fifo' --bind_ip localhost,mongo2
+    ports:
+      - 27019:27019
+    volumes:
+      - ./data/mongo2:/data/mongo
+    environment:
+#      MONGO_INITDB_ROOT_USERNAME: root
+#      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGODB_ADVERTISED_HOSTNAME: mongo2
+      MONGODB_REPLICA_SET_MODE: secondary
+      MONGODB_REPLICA_SET_KEY: fifo
+    depends_on:
+      - mongo1
     networks:
       - kafka
 

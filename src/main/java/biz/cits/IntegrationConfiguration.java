@@ -147,8 +147,9 @@ public class IntegrationConfiguration {
         MongoDbOutboundGateway gateway = new MongoDbOutboundGateway(mongoDbFactory);
         gateway.setCollectionNameExpressionString("'FIFO'");
         gateway.setQueryExpressionString("'{''name'':''Bob''}'");
-        gateway.setEntityClass(String.class);
+        gateway.setEntityClass(Object.class);
         gateway.setOutputChannelName("replyChannel");
+        gateway.setSendTimeout(5000);
         return gateway;
     }
 
