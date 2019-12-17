@@ -10,11 +10,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.mongodb.MongoDbFactory;
+import org.springframework.data.mongodb.core.SimpleMongoClientDbFactory;
 
 import java.util.Arrays;
 
 @Configuration
-public class DbConfiguration {
+public class MongoConfiguration {
+
     @Value("${db.mongo.host}")
     private String DB_MONGO_HOST;
 
@@ -48,4 +51,9 @@ public class DbConfiguration {
         return mongoClient.getDatabase(DB_MONGO_NAME);
     }
 
+    @Bean
+    @Autowired
+    public MongoDbFactory mongoDbFactory(MongoClient mongoClient) {
+        return new SimpleMongoClientDbFactory(mongoClient, DB_MONGO_NAME);
+    }
 }

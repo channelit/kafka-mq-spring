@@ -52,4 +52,6 @@ public class KafkaConfiguration {
         return new DefaultKafkaConsumerFactory<>(consumerProperties);
     }
 
+
+
 }
