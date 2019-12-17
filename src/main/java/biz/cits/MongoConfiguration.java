@@ -1,8 +1,6 @@
 package biz.cits;
 
-import com.mongodb.MongoClientSettings;
-import com.mongodb.MongoCredential;
-import com.mongodb.ServerAddress;
+import com.mongodb.*;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
@@ -20,11 +18,8 @@ import java.util.concurrent.TimeUnit;
 @Configuration
 public class MongoConfiguration {
 
-    @Value("${db.mongo.host}")
-    private String DB_MONGO_HOST;
-
-    @Value("${db.mongo.port}")
-    private Integer DB_MONGO_PORT;
+    @Value("${db.mongo.url}")
+    private String DB_MONGO_URL;
 
     @Value("${db.mongo.name}")
     private String DB_MONGO_NAME;
@@ -42,9 +37,8 @@ public class MongoConfiguration {
                 MongoClientSettings.builder()
                         .applyToClusterSettings(builder ->
                                 builder
-                                        .requiredClusterType(ClusterType.REPLICA_SET)
                                         .requiredReplicaSetName("fifo")
-                                        .hosts(Arrays.asList(new ServerAddress(DB_MONGO_HOST, DB_MONGO_PORT))))
+                                        .applyConnectionString(new ConnectionString(DB_MONGO_URL)))
 //                        .credential(mongoCredential)
                         .applyToConnectionPoolSettings(b -> b
                                 .maxConnectionIdleTime(5, TimeUnit.SECONDS)

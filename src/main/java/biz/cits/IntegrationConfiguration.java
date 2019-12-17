@@ -100,13 +100,13 @@ public class IntegrationConfiguration {
         return handler;
     }
 
-//    @Bean
-//    public KafkaMessageDrivenChannelAdapter<String, String> adapter(KafkaMessageListenerContainer kafkaListenerContainer) {
-//        KafkaMessageDrivenChannelAdapter<String, String> kafkaMessageDrivenChannelAdapter =
-//                new KafkaMessageDrivenChannelAdapter(kafkaListenerContainer, KafkaMessageDrivenChannelAdapter.ListenerMode.record);
-//        kafkaMessageDrivenChannelAdapter.setOutputChannelName("toMongo");
-//        return kafkaMessageDrivenChannelAdapter;
-//    }
+    @Bean
+    public KafkaMessageDrivenChannelAdapter<String, String> adapter(KafkaMessageListenerContainer kafkaListenerContainer) {
+        KafkaMessageDrivenChannelAdapter<String, String> kafkaMessageDrivenChannelAdapter =
+                new KafkaMessageDrivenChannelAdapter(kafkaListenerContainer, KafkaMessageDrivenChannelAdapter.ListenerMode.record);
+        kafkaMessageDrivenChannelAdapter.setOutputChannelName("toMongo");
+        return kafkaMessageDrivenChannelAdapter;
+    }
 
     @Bean
     public DefaultKafkaHeaderMapper mapper() {
