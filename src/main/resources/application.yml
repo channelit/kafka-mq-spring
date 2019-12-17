@@ -22,7 +22,9 @@
       name: ${DB_MONGO_NAME:FIFO}
       user: ${DB_MONGO_USER:root}
       pswd: ${DB_MONGO_PSWD:password}
-
+  kafka:
+    topic: fifo
+    key: msg.key
   spring:
     kafka:
       consumer:
