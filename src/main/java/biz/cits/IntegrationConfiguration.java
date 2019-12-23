@@ -1,5 +1,6 @@
 package biz.cits;
 
+import biz.cits.message.MsgParser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -17,7 +18,6 @@ import org.springframework.integration.jms.dsl.Jms;
 import org.springframework.integration.kafka.dsl.Kafka;
 import org.springframework.integration.kafka.inbound.KafkaMessageDrivenChannelAdapter;
 import org.springframework.integration.kafka.outbound.KafkaProducerMessageHandler;
-import org.springframework.integration.mongodb.config.MongoDbInboundChannelAdapterParser;
 import org.springframework.integration.mongodb.outbound.MongoDbOutboundGateway;
 import org.springframework.integration.mongodb.store.MongoDbChannelMessageStore;
 import org.springframework.jms.listener.DefaultMessageListenerContainer;
@@ -26,7 +26,6 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.listener.ContainerProperties;
 import org.springframework.kafka.listener.KafkaMessageListenerContainer;
 import org.springframework.kafka.support.DefaultKafkaHeaderMapper;
-import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
@@ -61,11 +60,16 @@ public class IntegrationConfiguration {
                 .extractPayload(true))
                 .channel("externalSourceMqChannel")
                 .log(
-                        LoggingHandler.Level.INFO, "External Source MQ", m -> m.getHeaders().getId() + ": " + m.getPayload()
+                        LoggingHandler.Level.INFO, "External Source MQ", m -> m.getHeaders()
                 )
-                .enrichHeaders(eh -> eh.header("kafka_partitionId", 0, true))
+                .enrichHeaders(e -> e.headerFunction("kafka_messageKey", this::enrichHeaderKafkaMessageKey))
                 .channel("toKafka")
                 .get();
+    }
+
+    public String enrichHeaderKafkaMessageKey(Message<String> message) {
+        String clientId = MsgParser.getId(message.getPayload());
+        return clientId;
     }
 
     @Bean
@@ -80,7 +84,7 @@ public class IntegrationConfiguration {
                         KafkaMessageDrivenChannelAdapter.ListenerMode.record, kafkaTopic)
                         .configureListenerContainer(c ->
                                 c.ackMode(ContainerProperties.AckMode.MANUAL)
-                                        .id("topic1ListenerContainer"))
+                                        .id("toKafkaAck"))
                         .filterInRetry(true))
                 .channel("toMongo")
                 .get();
@@ -125,14 +129,6 @@ public class IntegrationConfiguration {
 //        return queueChannel;
 //    }
 
-    @Bean
-    @ServiceActivator(inputChannel = "logChannel")
-    public LoggingHandler logging() {
-        LoggingHandler adapter = new LoggingHandler(LoggingHandler.Level.DEBUG);
-        adapter.setLoggerName("TEST_LOGGER");
-        adapter.setLogExpressionString("headers.id + ': ' + payload");
-        return adapter;
-    }
 
     @Bean
     @Autowired

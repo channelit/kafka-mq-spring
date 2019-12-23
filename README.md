@@ -4,8 +4,8 @@
 #### Steps:
 ##### Build the app:
 ```shell script
-docker build . -t kafka-mq
-docker tag kafka-mq kafka-mq:v1
+docker build . -t kafka-mq-spring
+docker tag kafka-mq kafka-mq-spring:v1
 ```
 
 ##### Build volume image with configuration (to work without physical mount):

@@ -14,4 +14,8 @@ public class MsgParser {
         return out;
     }
 
+    public static String getId(String msg) {
+        String[] splitMsg = msg.split(",");
+        return splitMsg[0];
+    }
 }
