@@ -58,11 +58,11 @@ public class IntegrationConfiguration {
         return IntegrationFlows.from(Jms.messageDrivenChannelAdapter(externalSourceMqListenerContainer)
                 .autoStartup(true)
                 .extractPayload(true))
-                .channel("externalSourceMqChannel")
                 .log(
                         LoggingHandler.Level.INFO, "External Source MQ", m -> m.getHeaders()
                 )
                 .enrichHeaders(e -> e.headerFunction("kafka_messageKey", this::enrichHeaderKafkaMessageKey))
+                .enrichHeaders(e-> e.header("kafka_topic", kafkaTopic))
                 .channel("toKafka")
                 .get();
     }
@@ -83,7 +83,7 @@ public class IntegrationConfiguration {
                 .from(Kafka.messageDrivenChannelAdapter(kafkaConsumerFactory,
                         KafkaMessageDrivenChannelAdapter.ListenerMode.record, kafkaTopic)
                         .configureListenerContainer(c ->
-                                c.ackMode(ContainerProperties.AckMode.MANUAL)
+                                c.ackMode(ContainerProperties.AckMode.COUNT)
                                         .id("toKafkaAck"))
                         .filterInRetry(true))
                 .channel("toMongo")

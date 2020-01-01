@@ -27,9 +27,12 @@ kafka:
 spring:
   kafka:
     consumer:
-      group-id: siTestGroup
       auto-offset-reset: earliest
-      enable-auto-commit: false
+      fetch-max-wait: 1s
+      fetch-min-size: 500000000
+      max-poll-records: 5
+      group-id: siTestGroup
+      enable-auto-commit: true
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
     producer:

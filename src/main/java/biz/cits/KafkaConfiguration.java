@@ -41,17 +41,19 @@ public class KafkaConfiguration {
 
     @Bean
     public KafkaMessageListenerContainer<?, ?> kafkaListenerContainer(@Qualifier("kafkaConsumerFactory") ConsumerFactory<?, ?> kafkaConsumerFactory) {
-        return new KafkaMessageListenerContainer<>(kafkaConsumerFactory,
-                new ContainerProperties(new TopicPartitionOffset(kafkaTopic, 0)));
+        ContainerProperties containerProperties = new ContainerProperties(new TopicPartitionOffset(kafkaTopic, 3));
+        containerProperties.setAckMode(ContainerProperties.AckMode.COUNT);
+        return new KafkaMessageListenerContainer<>(kafkaConsumerFactory, containerProperties);
     }
 
     @Bean
     public ConsumerFactory<?, ?> kafkaConsumerFactory() {
         Map<String, Object> consumerProperties = kafkaProperties.buildConsumerProperties();
-        consumerProperties.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 15000);
+//        consumerProperties.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 15000);
+//        consumerProperties.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, 30000);
+        consumerProperties.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 5);
         return new DefaultKafkaConsumerFactory<>(consumerProperties);
     }
-
 
 
 }
