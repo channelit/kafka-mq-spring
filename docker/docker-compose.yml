@@ -1,36 +1,36 @@
 version: '3.7'
 services:
 
-  kafka1:
-    image: cithub/kafka
-    hostname: kafka1
-    container_name: kafka1
-    depends_on:
-      - zoo1
-      - zoo2
-      - zoo3
-    ports:
-      - "8091:8091"
-      - "7091:7091"
-    volumes:
-      - ./data/kafka1/data:/kafka_data
-      - ./kafka/conf/server1.properties:/conf/server.properties
-      - ./data/kafka1/logs:/kafka_logs
-    command: ["./opt/kafka/bin/kafka-server-start.sh", "/conf/server.properties"]
-    networks:
-      - kafka
+#  kafka1:
+#    image: cithub/kafka
+#    hostname: kafka1
+#    container_name: kafka1
+#    depends_on:
+#      - zoo1
+#      - zoo2
+#      - zoo3
+#    ports:
+#      - "8091:8091"
+#      - "9091:9092"
+#    volumes:
+#      - ./data/kafka1/data:/kafka_data
+#      - ./kafka/conf/server1.properties:/conf/server.properties
+#      - ./data/kafka1/logs:/kafka_logs
+#    command: ["./opt/kafka/bin/kafka-server-start.sh", "/conf/server.properties"]
+#    networks:
+#      - kafka
 
   kafka2:
     image: cithub/kafka
-    hostname: kafka2
-    container_name: kafka2
+    hostname: Hardiks-MBP
+    container_name: Hardiks-MBP
     depends_on:
       - zoo1
       - zoo2
       - zoo3
     ports:
       - "8092:8092"
-      - "7092:7092"
+      - "9092:9092"
     volumes:
       - ./data/kafka2/data:/kafka_data
       - ./kafka/conf/server2.properties:/conf/server.properties
@@ -39,24 +39,24 @@ services:
     networks:
       - kafka
 
-  kafka3:
-    image: cithub/kafka
-    hostname: kafka3
-    container_name: kafka3
-    depends_on:
-      - zoo1
-      - zoo2
-      - zoo3
-    volumes:
-      - ./data/kafka3/data:/kafka_data
-      - ./kafka/conf/server3.properties:/conf/server.properties
-      - ./data/kafka3/logs:/kafka_logs
-    ports:
-      - "8093:8093"
-      - "7093:7093"
-    command: ["./opt/kafka/bin/kafka-server-start.sh", "/conf/server.properties"]
-    networks:
-      - kafka
+#  kafka3:
+#    image: cithub/kafka
+#    hostname: kafka3
+#    container_name: kafka3
+#    depends_on:
+#      - zoo1
+#      - zoo2
+#      - zoo3
+#    volumes:
+#      - ./data/kafka3/data:/kafka_data
+#      - ./kafka/conf/server3.properties:/conf/server.properties
+#      - ./data/kafka3/logs:/kafka_logs
+#    ports:
+#      - "8093:8093"
+#      - "9093:9092"
+#    command: ["./opt/kafka/bin/kafka-server-start.sh", "/conf/server.properties"]
+#    networks:
+#      - kafka
 
   zoo1:
     image: cithub/zookeeper
@@ -114,9 +114,9 @@ services:
     hostname: manager
     container_name: manager
     depends_on:
-      - kafka1
+#      - kafka1
       - kafka2
-      - kafka3
+#      - kafka3
     environment:
       ZK_HOSTS: "zoo1:2181,zoo2:2181,zoo3:2181"
     ports:

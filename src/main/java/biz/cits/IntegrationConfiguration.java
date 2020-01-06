@@ -7,15 +7,23 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.data.mongodb.MongoDbFactory;
+import org.springframework.expression.ExpressionParser;
+import org.springframework.expression.common.CompositeStringExpression;
 import org.springframework.expression.common.LiteralExpression;
+import org.springframework.expression.spel.standard.SpelExpression;
+import org.springframework.integration.IntegrationMessageHeaderAccessor;
 import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.integration.channel.QueueChannel;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
 import org.springframework.integration.dsl.MessageChannels;
+import org.springframework.integration.expression.DynamicExpression;
+import org.springframework.integration.expression.FunctionExpression;
+import org.springframework.integration.expression.ValueExpression;
 import org.springframework.integration.handler.LoggingHandler;
 import org.springframework.integration.jms.dsl.Jms;
 import org.springframework.integration.kafka.dsl.Kafka;
+import org.springframework.integration.kafka.dsl.KafkaProducerMessageHandlerSpec;
 import org.springframework.integration.kafka.inbound.KafkaMessageDrivenChannelAdapter;
 import org.springframework.integration.kafka.outbound.KafkaProducerMessageHandler;
 import org.springframework.integration.mongodb.outbound.MongoDbOutboundGateway;
@@ -23,6 +31,7 @@ import org.springframework.integration.mongodb.store.MongoDbChannelMessageStore;
 import org.springframework.jms.listener.DefaultMessageListenerContainer;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.listener.ContainerProperties;
 import org.springframework.kafka.listener.KafkaMessageListenerContainer;
 import org.springframework.kafka.support.DefaultKafkaHeaderMapper;
@@ -62,7 +71,7 @@ public class IntegrationConfiguration {
                         LoggingHandler.Level.INFO, "External Source MQ", m -> m.getHeaders()
                 )
                 .enrichHeaders(e -> e.headerFunction("kafka_messageKey", this::enrichHeaderKafkaMessageKey))
-                .enrichHeaders(e-> e.header("kafka_topic", kafkaTopic))
+                .enrichHeaders(e -> e.header("kafka_topic", kafkaTopic))
                 .channel("toKafka")
                 .get();
     }
@@ -96,12 +105,17 @@ public class IntegrationConfiguration {
 
     @ServiceActivator(inputChannel = "toKafka")
     @Bean
-    public MessageHandler handler(KafkaTemplate<String, String> kafkaTemplate) {
-        KafkaProducerMessageHandler<String, String> handler =
-                new KafkaProducerMessageHandler<>(kafkaTemplate);
-        handler.setTopicExpression(new LiteralExpression(kafkaTopic));
-//        handler.setMessageKeyExpression(new LiteralExpression(kafkaMessageKey));
-        return handler;
+    @Autowired
+    public KafkaProducerMessageHandlerSpec<String, String, ?> kafkaMessageHandler(ProducerFactory<String, String> producerFactory) {
+        return Kafka
+                .outboundChannelAdapter(producerFactory)
+                .messageKey(m -> m
+                        .getHeaders()
+                        .get(IntegrationMessageHeaderAccessor.SEQUENCE_NUMBER))
+                .headerMapper(mapper())
+                .topicExpression("headers[kafka_topic] ?: '" + kafkaTopic + "'")
+                .messageKeyExpression("headers[kafka_messageKey]")
+                .configureKafkaTemplate(t -> t.id("kafkaTemplate:" + kafkaTopic));
     }
 
     @Bean

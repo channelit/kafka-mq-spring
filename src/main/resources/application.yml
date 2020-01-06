@@ -41,4 +41,5 @@ spring:
       retries: 0
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: biz.cits.mq.JavaSerializer
-    bootstrap-servers: localhost:8091,localhost:8092,localhost:8093
+#    bootstrap-servers: Hardiks-MBP:8091,Hardiks-MBP:8092,Hardiks-MBPdoc:8093
+    bootstrap-servers: Hardiks-MBP:9092
