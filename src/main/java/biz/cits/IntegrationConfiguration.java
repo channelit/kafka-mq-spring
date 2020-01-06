@@ -1,12 +1,14 @@
 package biz.cits;
 
 import biz.cits.message.MsgParser;
+import org.bson.json.Converter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.data.mongodb.MongoDbFactory;
+import org.springframework.data.mongodb.core.convert.MongoConverter;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.common.CompositeStringExpression;
 import org.springframework.expression.common.LiteralExpression;
@@ -17,6 +19,7 @@ import org.springframework.integration.channel.QueueChannel;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
 import org.springframework.integration.dsl.MessageChannels;
+import org.springframework.integration.dsl.Transformers;
 import org.springframework.integration.expression.DynamicExpression;
 import org.springframework.integration.expression.FunctionExpression;
 import org.springframework.integration.expression.ValueExpression;
@@ -27,6 +30,7 @@ import org.springframework.integration.kafka.dsl.KafkaProducerMessageHandlerSpec
 import org.springframework.integration.kafka.inbound.KafkaMessageDrivenChannelAdapter;
 import org.springframework.integration.kafka.outbound.KafkaProducerMessageHandler;
 import org.springframework.integration.mongodb.outbound.MongoDbOutboundGateway;
+import org.springframework.integration.mongodb.outbound.MongoDbStoringMessageHandler;
 import org.springframework.integration.mongodb.store.MongoDbChannelMessageStore;
 import org.springframework.jms.listener.DefaultMessageListenerContainer;
 import org.springframework.kafka.core.ConsumerFactory;
@@ -35,6 +39,8 @@ import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.listener.ContainerProperties;
 import org.springframework.kafka.listener.KafkaMessageListenerContainer;
 import org.springframework.kafka.support.DefaultKafkaHeaderMapper;
+import org.springframework.kafka.support.converter.BytesJsonMessageConverter;
+import org.springframework.kafka.support.converter.StringJsonMessageConverter;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
@@ -83,11 +89,6 @@ public class IntegrationConfiguration {
 
     @Bean
     public IntegrationFlow fromKafkaFlow() {
-//        return IntegrationFlows
-//                .from(Kafka.messageDrivenChannelAdapter(kafkaListenerContainer,
-//                        KafkaMessageDrivenChannelAdapter.ListenerMode.record)
-//                        .id("topic2Adapter"))
-//        .get();
         return IntegrationFlows
                 .from(Kafka.messageDrivenChannelAdapter(kafkaConsumerFactory,
                         KafkaMessageDrivenChannelAdapter.ListenerMode.record, kafkaTopic)
@@ -109,9 +110,13 @@ public class IntegrationConfiguration {
     public KafkaProducerMessageHandlerSpec<String, String, ?> kafkaMessageHandler(ProducerFactory<String, String> producerFactory) {
         return Kafka
                 .outboundChannelAdapter(producerFactory)
-                .messageKey(m -> m
-                        .getHeaders()
-                        .get(IntegrationMessageHeaderAccessor.SEQUENCE_NUMBER))
+                .messageKey(m -> {
+                    System.out.println(m.getPayload());
+                    return
+                    m
+                            .getHeaders()
+                            .get(IntegrationMessageHeaderAccessor.SEQUENCE_NUMBER);
+                })
                 .headerMapper(mapper())
                 .topicExpression("headers[kafka_topic] ?: '" + kafkaTopic + "'")
                 .messageKeyExpression("headers[kafka_messageKey]")
@@ -123,6 +128,8 @@ public class IntegrationConfiguration {
         KafkaMessageDrivenChannelAdapter<String, String> kafkaMessageDrivenChannelAdapter =
                 new KafkaMessageDrivenChannelAdapter(kafkaListenerContainer, KafkaMessageDrivenChannelAdapter.ListenerMode.record);
         kafkaMessageDrivenChannelAdapter.setOutputChannelName("toMongo");
+        kafkaMessageDrivenChannelAdapter.setMessageConverter(new BytesJsonMessageConverter());
+        kafkaMessageDrivenChannelAdapter.setPayloadType(String.class);
         return kafkaMessageDrivenChannelAdapter;
     }
 
@@ -151,20 +158,16 @@ public class IntegrationConfiguration {
     }
 
     @Bean
-    @ServiceActivator(inputChannel = "toMongo")
+    @ServiceActivator(inputChannel = "xxxx")
     @Autowired
-    public MessageHandler mongoDbOutboundGateway(MongoDbFactory mongoDbFactory) {
-        MongoDbOutboundGateway gateway = new MongoDbOutboundGateway(mongoDbFactory);
-        gateway.setCollectionNameExpressionString("'FIFO'");
-        gateway.setQueryExpressionString("'{''name'':''Bob''}'");
-        gateway.setEntityClass(Object.class);
-        gateway.setOutputChannelName("replyChannel");
-        gateway.setSendTimeout(5000);
-        return gateway;
+    public MongoDbStoringMessageHandler mongoDbOutboundAdapter(MongoDbFactory mongoDbFactory) {
+        MongoDbStoringMessageHandler handler = new MongoDbStoringMessageHandler(mongoDbFactory);
+        handler.setCollectionNameExpression(new LiteralExpression("FIFO"));
+        return handler;
     }
 
     @Bean
-    @ServiceActivator(inputChannel = "replyChannel")
+    @ServiceActivator(inputChannel = "toMongo")
     public MessageHandler handler() {
         return message -> System.out.println(message.getPayload());
     }

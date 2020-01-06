@@ -14,6 +14,7 @@ import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
 import org.springframework.kafka.listener.ContainerProperties;
 import org.springframework.kafka.listener.KafkaMessageListenerContainer;
 import org.springframework.kafka.support.TopicPartitionOffset;
+import org.springframework.kafka.support.converter.StringJsonMessageConverter;
 
 import java.util.Map;
 
@@ -36,7 +37,10 @@ public class KafkaConfiguration {
 
     @Bean
     public KafkaTemplate<String, String> kafkaTemplate() {
-        return new KafkaTemplate<>(producerFactory());
+        KafkaTemplate<String, String> kafkaTemplate = new KafkaTemplate<>(producerFactory());
+        kafkaTemplate.setMessageConverter(new StringJsonMessageConverter());
+
+        return kafkaTemplate;
     }
 
     @Bean
