@@ -29,7 +29,6 @@ services:
       - zoo2
       - zoo3
     ports:
-      - "8092:8092"
       - "9092:9092"
     volumes:
       - ./data/kafka2/data:/kafka_data
