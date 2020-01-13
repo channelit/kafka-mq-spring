@@ -43,3 +43,17 @@ spring:
       value-serializer: biz.cits.mq.JavaSerializer
 #    bootstrap-servers: Hardiks-MBP:8091,Hardiks-MBP:8092,Hardiks-MBPdoc:8093
     bootstrap-servers: Hardiks-MBP:9092
+
+cloud:
+  aws:
+    stack:
+      auto: false
+    region:
+      static: us-east-1
+    credentials:
+      accessKey: ${ACCESS_KEY}
+      secretKey: ${SECRET_KEY}
+
+app:
+  awsServices:
+    bucketName: cits-s3-test

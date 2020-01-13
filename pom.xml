@@ -37,6 +37,11 @@
             <version>3.2.1.RELEASE</version>
         </dependency>
         <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-s3</artifactId>
+            <version>1.11.699</version>>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.integration</groupId>
             <artifactId>spring-integration-mongodb</artifactId>
             <version>5.2.2.RELEASE</version>
